@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartInventory</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --accent:    #6c63ff;
+      --accent-dim:#3d3880;
+      --danger:    #ff4d6d;
+      --success:   #36d399;
+      --text:      #e8eaf0;
+      --muted:     #7c8098;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --radius:    10px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--muted);
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+    .dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+    main { flex: 1; padding: 32px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); }
+    .stat-card .value.accent { color: var(--accent); }
+    .stat-card .value.success { color: var(--success); }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 12px 9px 36px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    .search-icon {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 14px; pointer-events: none;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.88; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover { background: var(--surface); }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: 0.85; }
+
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(108,99,255,0.06); }
+
+    tbody td { padding: 14px 16px; vertical-align: middle; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .stock-low { color: var(--danger); font-weight: 600; }
+    .stock-ok  { color: var(--success); }
+
+    .actions { display: flex; gap: 6px; }
+
+    /* ── Empty / Loading ── */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty .icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* ── Modal ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow);
+      transform: translateY(12px);
+      transition: transform 0.2s;
+    }
+    .overlay.open .modal { transform: translateY(0); }
+
+    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--success);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      box-shadow: var(--shadow);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 300;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { border-left-color: var(--danger); }
+
+    /* ── Loader ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📦</div>
+      SmartInventory
+    </div>
+    <div class="status-dot">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Conectando...</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">Total productos</div>
+        <div class="value accent" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Stock total</div>
+        <div class="value" id="statStock">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Stock bajo (≤5)</div>
+        <div class="value" style="color:var(--danger)" id="statLow">—</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre o categoría…" oninput="filterProducts()" />
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Nuevo producto</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Descripción</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="7"><div class="empty"><div class="spinner"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modalTitle">Nuevo producto</h2>
+    <input type="hidden" id="editId" />
+    <div class="field"><label>Nombre</label><input id="fName" placeholder="Ej: Teclado Mecánico" /></div>
+    <div class="field"><label>Descripción</label><input id="fDesc" placeholder="Ej: Switch Blue, retroiluminado" /></div>
+    <div class="field"><label>Categoría</label><input id="fCat" placeholder="Ej: Periféricos" /></div>
+    <div class="field"><label>Precio (ARS)</label><input id="fPrice" type="number" min="0" placeholder="0" /></div>
+    <div class="field"><label>Stock</label><input id="fStock" type="number" min="0" placeholder="0" /></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = 'http://localhost:5053/api';
+  let allProducts = [];
+
+  // ── API helpers ──────────────────────────────────────────
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(API + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  // ── Status ping ──────────────────────────────────────────
+  async function checkStatus() {
+    try {
+      await apiFetch('/status/ping');
+      document.getElementById('statusDot').classList.add('online');
+      document.getElementById('statusText').textContent = 'API conectada';
+    } catch {
+      document.getElementById('statusText').textContent = 'Sin conexión';
+    }
+  }
+
+  // ── Load products ────────────────────────────────────────
+  async function loadProducts() {
+    try {
+      allProducts = await apiFetch('/products');
+      renderTable(allProducts);
+      updateStats(allProducts);
+    } catch {
+      showToast('No se pudieron cargar los productos', true);
+      renderEmpty();
+    }
+  }
+
+  // ── Stats ────────────────────────────────────────────────
+  function updateStats(products) {
+    document.getElementById('statTotal').textContent = products.length;
+    document.getElementById('statStock').textContent = products.reduce((s, p) => s + p.stock, 0);
+    document.getElementById('statLow').textContent   = products.filter(p => p.stock <= 5).length;
+  }
+
+  // ── Render table ─────────────────────────────────────────
+  function renderTable(products) {
+    const tbody = document.getElementById('tableBody');
+    if (!products.length) { renderEmpty(); return; }
+
+    tbody.innerHTML = products.map(p => `
+      <tr>
+        <td style="color:var(--muted);font-family:var(--font-mono)">#${p.id}</td>
+        <td style="font-weight:600">${esc(p.name)}</td>
+        <td><span class="badge">${esc(p.category)}</span></td>
+        <td style="font-family:var(--font-mono)">$${p.price.toLocaleString('es-AR')}</td>
+        <td class="${p.stock <= 5 ? 'stock-low' : 'stock-ok'}">${p.stock}</td>
+        <td style="color:var(--muted)">${esc(p.description)}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal(${p.id})">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderEmpty() {
+    document.getElementById('tableBody').innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty">
+          <div class="icon">📭</div>
+          No hay productos todavía
+        </div>
+      </td></tr>`;
+  }
+
+  // ── Search/filter ─────────────────────────────────────────
+  function filterProducts() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = q
+      ? allProducts.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q))
+      : allProducts;
+    renderTable(filtered);
+  }
+
+  // ── Modal ─────────────────────────────────────────────────
+  function openModal() {
+    document.getElementById('modalTitle').textContent = 'Nuevo producto';
+    document.getElementById('editId').value = '';
+    ['fName','fDesc','fCat','fPrice','fStock'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  async function openEditModal(id) {
+    const p = allProducts.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modalTitle').textContent = 'Editar producto';
+    document.getElementById('editId').value  = p.id;
+    document.getElementById('fName').value   = p.name;
+    document.getElementById('fDesc').value   = p.description;
+    document.getElementById('fCat').value    = p.category;
+    document.getElementById('fPrice').value  = p.price;
+    document.getElementById('fStock').value  = p.stock;
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('overlay')) closeModal();
+  }
+
+  // ── Save (create / update) ────────────────────────────────
+  async function saveProduct() {
+    const id = document.getElementById('editId').value;
+    const body = {
+      name:        document.getElementById('fName').value.trim(),
+      description: document.getElementById('fDesc').value.trim(),
+      category:    document.getElementById('fCat').value.trim(),
+      price:       parseFloat(document.getElementById('fPrice').value) || 0,
+      stock:       parseInt(document.getElementById('fStock').value)   || 0,
+    };
+
+    if (!body.name) { showToast('El nombre es obligatorio', true); return; }
+
+    try {
+      if (id) {
+        await apiFetch(`/products/${id}`, { method: 'PUT', body: JSON.stringify({ id: parseInt(id), ...body }) });
+        showToast('Producto actualizado');
+      } else {
+        await apiFetch('/products', { method: 'POST', body: JSON.stringify(body) });
+        showToast('Producto creado');
+      }
+      closeModal();
+      loadProducts();
+    } catch {
+      showToast('Error al guardar el producto', true);
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────
+  async function deleteProduct(id) {
+    if (!confirm('¿Eliminar este producto?')) return;
+    try {
+      await apiFetch(`/products/${id}`, { method: 'DELETE' });
+      showToast('Producto eliminado');
+      loadProducts();
+    } catch {
+      showToast('Error al eliminar', true);
+    }
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (error ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // ── Utils ─────────────────────────────────────────────────
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  checkStatus();
+  loadProducts();
+</script>
+</body>
+</html>
