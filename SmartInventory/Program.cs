@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Reemplazamos InMemory por PostgreSQL
 builder.Services.AddScoped<IProductService, PostgresProductService>();
+builder.Services.AddScoped<ISaleService, PostgresSaleService>();
 
 builder.Services.AddCors(options =>
 {
