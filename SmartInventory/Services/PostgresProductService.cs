@@ -25,8 +25,11 @@ public class PostgresProductService : IProductService
 
     public Product Add(Product product)
     {
+        product.InitialStock = product.Stock;
+
         _db.Products.Add(product);
         _db.SaveChanges();
+
         return product;
     }
 

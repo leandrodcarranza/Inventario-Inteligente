@@ -14,4 +14,12 @@ public class Product
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public string Category { get; set; } = string.Empty;
+    public int InitialStock { get; set; }
+    public int Sold
+    {
+        get
+        {
+            return InitialStock - Stock;
+        }
+    }
 }
