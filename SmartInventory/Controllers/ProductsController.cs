@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartInventory.Models;
 using SmartInventory.Services;
@@ -21,9 +22,11 @@ public class ProductsController : ControllerBase
         _service = service;
     }
 
+    [Authorize(Roles = "admin,seller")]
     [HttpGet]
     public IActionResult GetAll() => Ok(_service.GetAll());
 
+    [Authorize(Roles = "admin,seller")]
     [HttpGet("{id}")]
     public IActionResult GetById(int id)
     {
@@ -31,6 +34,7 @@ public class ProductsController : ControllerBase
         return product is null ? NotFound() : Ok(product);
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPost]
     public IActionResult Create(Product product)
     {
@@ -38,6 +42,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPut("{id}")]
     public IActionResult Update(int id, Product product)
     {
@@ -45,6 +50,7 @@ public class ProductsController : ControllerBase
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    [Authorize(Roles = "admin")]
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
