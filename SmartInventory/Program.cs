@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IPurchaseService, PostgresPurchaseService>();
 
 // 🔥 SWAGGER CON JWT (Authorize button)
 builder.Services.AddSwaggerGen(options =>
