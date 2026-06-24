@@ -15,4 +15,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Product> Products { get; set; } = null!;
     public DbSet<Sale> Sales { get; set; } = null!;
+
+    public DbSet<Purchase> Purchases { get; set; } = null!;
+
 }
